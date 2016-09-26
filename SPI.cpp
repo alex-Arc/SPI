@@ -157,16 +157,23 @@ uint8_t SPIClass::inTransactionFlag = 0;
 
 void SPIClass::begin()
 {
+  //System Clock Gate Control, open clock channel to SPI0 module
 	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+  // SPI Module Configuration Register -> MCR = Allows external logic to disable the module clocks | Disable SPI for safe configuration | set all chip select to active low
 	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+  // SPI Clock and Transfer Attributes Register -> CTAR = set Frame Size to 7+1 | Baud Rate Prescaler to 0 | Baud Rate Scaler to 4 | Scale of delay between Signal and Clock
+  //SCK baud rate = (F_BUS /PBR) x [(1+DBR)/BR], so the default baud rate = F_BUS/2 x ()(1+0)/4)
 	SPI0_CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
 	SPI0_CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+  // SPI Module Configuration Register -> MCR = Set to master mode | set all chip select to active low
+  // by not calling SPI_MCR_HALT th SPI module will go into runmode
 	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
 	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
 }
 
 void SPIClass::end() {
 	SPCR.disable_pins();
+  //SPI Module Configuration Register -> MCR = Allows external logic to disable the module clocks | Disable SPI for safe configuration | set all chip select to active low
 	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
 }
 
@@ -918,5 +925,3 @@ SPIClass SPI(SPI_INTERFACE, SPI_INTERFACE_ID, SPI_0_Init);
 
 
 #endif
-
-
